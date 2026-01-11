@@ -1,0 +1,47 @@
+{
+	"name": "evm-payment-channels",
+	"version": "0.0.1",
+	"private": true,
+	"license": "GPL-3.0",
+	"description": "A minimal, privacy-preserving payment channel system for EVM-compatible blockchains",
+	"workspaces": [
+		"smart-contracts",
+		"backend",
+		"application"
+	],
+	"scripts": {
+		"contracts:compile": "yarn workspace @evm-payment-channels/smart-contracts compile",
+		"contracts:test": "yarn workspace @evm-payment-channels/smart-contracts test",
+		"contracts:coverage": "yarn workspace @evm-payment-channels/smart-contracts coverage",
+		"contracts:deploy": "yarn workspace @evm-payment-channels/smart-contracts deploy",
+		"contracts:verify": "yarn workspace @evm-payment-channels/smart-contracts verify",
+		"backend:dev": "yarn workspace @evm-payment-channels/backend dev",
+		"backend:build": "yarn workspace @evm-payment-channels/backend build",
+		"backend:start": "yarn workspace @evm-payment-channels/backend start",
+		"app:dev": "yarn workspace @evm-payment-channels/application dev",
+		"app:build": "yarn workspace @evm-payment-channels/application build",
+		"app:start": "yarn workspace @evm-payment-channels/application start",
+		"install:all": "yarn install",
+		"clean": "yarn workspaces foreach run clean",
+		"format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,sol}\""
+	},
+	"devDependencies": {
+		"prettier": "^3.1.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/frankencoin/evm-payment-channels"
+	},
+	"keywords": [
+		"payment-channels",
+		"layer2",
+		"evm",
+		"optimistic-settlement",
+		"eip-712",
+		"monorepo"
+	],
+	"engines": {
+		"node": ">=18.0.0",
+		"yarn": ">=1.22.0"
+	}
+}
