@@ -58,7 +58,7 @@ describe('PaymentChannel - Funding', function () {
 			expect(channel.address0).to.equal(address0);
 			expect(channel.address1).to.equal(address1);
 			expect(channel.balance).to.equal(amount);
-			expect(channel.nonce).to.equal(1n);
+			expect(channel.nonce).to.equal(0n);
 			expect(channel.timelock).to.equal(MIN_TIMELOCK);
 		});
 
@@ -186,7 +186,7 @@ describe('PaymentChannel - Funding', function () {
 			const salt = randomSalt();
 
 			// Initial funding
-			const funding1 = createFunding(
+			const funding0 = createFunding(
 				alice.address,
 				bob.address,
 				await token.getAddress(),
@@ -199,13 +199,13 @@ describe('PaymentChannel - Funding', function () {
 
 			await approveTokens(token, await paymentChannel.getAddress(), alice, bob);
 
-			const sig0_1 = await signFunding(address0 === alice.address ? alice : bob, domain, funding1);
-			const sig1_1 = await signFunding(address0 === alice.address ? bob : alice, domain, funding1);
+			const sig0_0 = await signFunding(address0 === alice.address ? alice : bob, domain, funding0);
+			const sig1_0 = await signFunding(address0 === alice.address ? bob : alice, domain, funding0);
 
-			await paymentChannel.fund(funding1, sig0_1, sig1_1);
+			await paymentChannel.fund(funding0, sig0_0, sig1_0);
 
 			// Additional funding
-			const funding2 = createFunding(
+			const funding1 = createFunding(
 				alice.address,
 				bob.address,
 				await token.getAddress(),
@@ -213,13 +213,13 @@ describe('PaymentChannel - Funding', function () {
 				salt,
 				ethers.parseEther('5'),
 				true, // address1 funds this time
-				2n // nonce > channel.nonce (which is 1)
+				1n // nonce > channel.nonce (which is 0)
 			);
 
-			const sig0_2 = await signFunding(address0 === alice.address ? alice : bob, domain, funding2);
-			const sig1_2 = await signFunding(address0 === alice.address ? bob : alice, domain, funding2);
+			const sig0_1 = await signFunding(address0 === alice.address ? alice : bob, domain, funding1);
+			const sig1_1 = await signFunding(address0 === alice.address ? bob : alice, domain, funding1);
 
-			await expect(paymentChannel.fund(funding2, sig0_2, sig1_2)).to.emit(paymentChannel, 'ChannelFunded');
+			await expect(paymentChannel.fund(funding1, sig0_1, sig1_1)).to.emit(paymentChannel, 'ChannelFunded');
 
 			// Verify total balance
 			const channelId = computeChannelId(
@@ -233,7 +233,7 @@ describe('PaymentChannel - Funding', function () {
 			const channel = await paymentChannel.getChannel(channelId);
 
 			expect(channel.balance).to.equal(ethers.parseEther('15'));
-			expect(channel.nonce).to.equal(3n); // nonce incremented to 3
+			expect(channel.nonce).to.equal(1n); // nonce set to 1
 		});
 
 		it('Should revert if nonce is not greater than channel nonce', async function () {
@@ -244,7 +244,7 @@ describe('PaymentChannel - Funding', function () {
 			const salt = randomSalt();
 
 			// Initial funding
-			const funding1 = createFunding(
+			const funding0 = createFunding(
 				alice.address,
 				bob.address,
 				await token.getAddress(),
@@ -256,6 +256,25 @@ describe('PaymentChannel - Funding', function () {
 			);
 
 			await approveTokens(token, await paymentChannel.getAddress(), alice, bob);
+
+			const sig0_0 = await signFunding(address0 === alice.address ? alice : bob, domain, funding0);
+			const sig1_0 = await signFunding(address0 === alice.address ? bob : alice, domain, funding0);
+
+			await paymentChannel.fund(funding0, sig0_0, sig1_0);
+
+			// ---
+
+			// Additional funding
+			const funding1 = await createFunding(
+				alice.address,
+				bob.address,
+				await token.getAddress(),
+				MIN_TIMELOCK,
+				salt,
+				ethers.parseEther('5'),
+				true, // address1 funds this time
+				1n // nonce > channel.nonce (which is 0)
+			);
 
 			const sig0_1 = await signFunding(address0 === alice.address ? alice : bob, domain, funding1);
 			const sig1_1 = await signFunding(address0 === alice.address ? bob : alice, domain, funding1);

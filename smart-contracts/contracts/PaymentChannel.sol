@@ -115,7 +115,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 			channel.address1 = funding.address1;
 			channel.timelock = funding.timelock;
 			channel.salt = funding.salt;
-			channel.nonce = 1;
+			channel.nonce = 0;
 			channel.balance = funding.amount;
 
 			emit ChannelCreated(
@@ -131,7 +131,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 			if (channel.address0 == address(0)) revert ChannelNotFound();
 			if (funding.nonce <= channel.nonce) revert InvalidNonce();
 
-			channel.nonce = funding.nonce + 1;
+			channel.nonce = funding.nonce;
 			channel.balance += funding.amount;
 		}
 

@@ -1,5 +1,5 @@
 {
-	"name": "@evm-payment-channels/smart-contracts",
+	"name": "@wrytes/evm-payment-channels-core",
 	"version": "0.0.1",
 	"private": true,
 	"license": "GPL-3.0",
@@ -57,7 +57,9 @@
 		"mocha": "^10.7.0",
 		"solidity-coverage": "^0.8.16",
 		"ts-node": "^10.9.1",
-		"tsc-watch": "^6.2.0"
+		"tsc-watch": "^6.2.0",
+		"tsup": "^8.3.0",
+		"viem": "^2.31.2"
 	},
 	"dependencies": {
 		"@typechain/ethers-v6": "^0.5.1",
