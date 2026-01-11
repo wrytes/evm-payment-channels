@@ -1,7 +1,7 @@
 {
 	"name": "evm-payment-channels",
 	"version": "0.0.1",
-	"private": true,
+	"private": false,
 	"license": "GPL-3.0",
 	"description": "A minimal, privacy-preserving payment channel system for EVM-compatible blockchains",
 	"workspaces": [
