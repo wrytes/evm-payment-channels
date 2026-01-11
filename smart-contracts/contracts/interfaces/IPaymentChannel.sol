@@ -13,18 +13,20 @@ interface IPaymentChannel {
 	 * @notice On-chain channel state
 	 * @param address0 Lower address (lexicographically sorted)
 	 * @param address1 Higher address (lexicographically sorted)
+	 * @param timelock Challenge period duration in seconds
+	 * @param salt Unique identifier allowing multiple channels between same parties
 	 * @param balance Total on-chain deposits
 	 * @param nonce Funding round counter (increments with each fund())
-	 * @param timelock Challenge period duration in seconds
 	 * @param submitter Who initiated unilateral settlement (false=address0, true=address1)
 	 * @param maturity Timestamp when settlement can execute (0=no pending settlement)
 	 */
 	struct Channel {
 		address address0;
 		address address1;
+		uint256 timelock;
+		bytes32 salt;
 		uint256 balance;
 		uint256 nonce;
-		uint256 timelock;
 		bool submitter;
 		uint256 maturity;
 	}
@@ -34,21 +36,22 @@ interface IPaymentChannel {
 	 * @param address0 Lower address (sorted)
 	 * @param address1 Higher address (sorted)
 	 * @param token Token address (must match contract's token)
+	 * @param timelock Challenge period duration (only used on channel creation)
+	 * @param salt Unique identifier allowing multiple channels between same parties
+	 *
 	 * @param amount Amount to deposit
 	 * @param source Who is funding (false=address0, true=address1)
 	 * @param nonce 0 for channel creation, >channel.nonce for additional funding
-	 * @param timelock Challenge period duration (only used on channel creation)
-	 * @param salt Unique identifier allowing multiple channels between same parties
 	 */
 	struct Funding {
 		address address0;
 		address address1;
 		address token;
+		uint256 timelock;
+		bytes32 salt;
 		uint256 amount;
 		bool source;
 		uint256 nonce;
-		uint256 timelock;
-		bytes32 salt;
 	}
 
 	/**
@@ -74,7 +77,9 @@ interface IPaymentChannel {
 		bytes32 indexed channelId,
 		address indexed address0,
 		address indexed address1,
-		uint256 timelock
+		address token,
+		uint256 timelock,
+		bytes32 salt
 	);
 
 	/**
@@ -118,12 +123,7 @@ interface IPaymentChannel {
 	/**
 	 * @notice Emitted when settlement is executed after maturity
 	 */
-	event SettlementExecuted(
-		bytes32 indexed channelId,
-		uint256 payout0,
-		uint256 payout1,
-		bool penaltyApplied
-	);
+	event SettlementExecuted(bytes32 indexed channelId, uint256 payout0, uint256 payout1, bool penaltyApplied);
 
 	/**
 	 * @notice Emitted when a channel is permanently closed
@@ -164,11 +164,7 @@ interface IPaymentChannel {
 	 * @param sig0 EIP-712 signature from address0
 	 * @param sig1 EIP-712 signature from address1
 	 */
-	function settleCooperative(
-		Balance calldata balance,
-		bytes calldata sig0,
-		bytes calldata sig1
-	) external;
+	function settleCooperative(Balance calldata balance, bytes calldata sig0, bytes calldata sig1) external;
 
 	/**
 	 * @notice Unilateral settlement with one signature (starts challenge period)
@@ -199,7 +195,7 @@ interface IPaymentChannel {
 	function token() external view returns (address);
 
 	/**
-	 * @notice Compute channelId from funding parameters (nonce must be 0)
+	 * @notice Compute channelId from funding parameters, unused for calc.: amount, source, nonce
 	 */
 	function computeChannelId(Funding calldata funding) external view returns (bytes32);
 

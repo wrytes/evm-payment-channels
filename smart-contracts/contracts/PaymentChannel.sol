@@ -27,11 +27,18 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 	uint256 public constant SETTLEMENT_NONCE = type(uint256).max;
 
 	/// @notice EIP-712 typehash for Funding struct
+	bytes32 public constant CHANNELID_TYPEHASH =
+		keccak256('ChannelId(address address0,address address1,address token,uint256 timelock,bytes32 salt)');
+
+	/// @notice EIP-712 typehash for Funding struct
 	bytes32 public constant FUNDING_TYPEHASH =
-		keccak256('Funding(address address0,address address1,address token,uint256 amount,bool source,uint256 nonce,uint256 timelock)');
+		keccak256(
+			'Funding(address address0,address address1,address token,uint256 timelock,bytes32 salt,uint256 amount,bool source,uint256 nonce)'
+		);
 
 	/// @notice EIP-712 typehash for Balance struct
-	bytes32 public constant BALANCE_TYPEHASH = keccak256('Balance(bytes32 channelId,uint256 balance0,uint256 balance1,uint256 nonce)');
+	bytes32 public constant BALANCE_TYPEHASH =
+		keccak256('Balance(bytes32 channelId,uint256 balance0,uint256 balance1,uint256 nonce)');
 
 	// ============ Immutables ============
 
@@ -81,7 +88,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 		// Validate amount
 		if (funding.amount == 0) revert InvalidAmount();
 
-		// Compute channelId (always based on nonce=0 version)
+		// Compute channelId
 		bytes32 channelId = _computeChannelId(funding);
 
 		// Check channel not closed
@@ -107,10 +114,18 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 			channel.address0 = funding.address0;
 			channel.address1 = funding.address1;
 			channel.timelock = funding.timelock;
+			channel.salt = funding.salt;
 			channel.nonce = 1;
 			channel.balance = funding.amount;
 
-			emit ChannelCreated(channelId, funding.address0, funding.address1, funding.timelock);
+			emit ChannelCreated(
+				channelId,
+				funding.address0,
+				funding.address1,
+				funding.token,
+				funding.timelock,
+				funding.salt
+			);
 		} else {
 			// Additional funding
 			if (channel.address0 == address(0)) revert ChannelNotFound();
@@ -150,7 +165,10 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 	}
 
 	/// @inheritdoc IPaymentChannel
-	function settleUnilateral(Balance calldata balance, bytes calldata sig) external nonReentrant notClosed(balance.channelId) {
+	function settleUnilateral(
+		Balance calldata balance,
+		bytes calldata sig
+	) external nonReentrant notClosed(balance.channelId) {
 		Channel storage channel = _channels[balance.channelId];
 		if (channel.address0 == address(0)) revert ChannelNotFound();
 
@@ -165,7 +183,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 
 		// Verify signature and determine submitter
 		bytes32 balanceHash = _hashBalance(balance);
-		address signer = ECDSA.recover(_hashTypedDataV4(balanceHash), sig);
+		address signer = ECDSA.recover(balanceHash, sig);
 
 		bool submitter;
 		if (signer == channel.address0) {
@@ -203,7 +221,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 		if (channel.maturity == 0) revert NoSettlementPending();
 
 		// Challenge nonce must be less than settlement nonce
-		if (balance.nonce >= SETTLEMENT_NONCE) revert InvalidNonce();
+		if (balance.nonce >= SETTLEMENT_NONCE) revert InvalidNonce(); // TODO: check if "==" is better for comparision
 
 		// Challenge nonce must be higher than current challenge
 		Balance storage currentChallenge = _challenges[balance.channelId];
@@ -252,7 +270,8 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 			// Challenge exists - apply winner-takes-all penalty
 			penaltyApplied = true;
 
-			bool balancesMatch = (settlement.balance0 == challengeState.balance0 && settlement.balance1 == challengeState.balance1);
+			bool balancesMatch = (settlement.balance0 == challengeState.balance0 &&
+				settlement.balance1 == challengeState.balance1);
 
 			if (balancesMatch) {
 				// Unnecessary challenge - submitter wins all
@@ -314,19 +333,22 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 
 	/**
 	 * @dev Compute channelId from funding parameters
-	 * @notice channelId is fixed at creation (based on addresses, token, and initial timelock)
+	 * @notice channelId is fixed at creation (based on addresses, token, timelock and salt)
 	 */
 	function _computeChannelId(Funding calldata funding) internal view returns (bytes32) {
 		// Create a deterministic channelId based on the channel's immutable properties
 		// We use a simplified struct that doesn't include amount/source/nonce which change
 		return
-			keccak256(
-				abi.encode(
-					keccak256('ChannelId(address address0,address address1,address token,uint256 timelock)'),
-					funding.address0,
-					funding.address1,
-					funding.token,
-					funding.timelock
+			_hashTypedDataV4( // TODO: added _hashTypedDataV4, does it make sense?
+				keccak256(
+					abi.encode(
+						CHANNELID_TYPEHASH,
+						funding.address0,
+						funding.address1,
+						funding.token,
+						funding.timelock,
+						funding.salt
+					)
 				)
 			);
 	}
@@ -343,10 +365,11 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 						funding.address0,
 						funding.address1,
 						funding.token,
+						funding.timelock,
+						funding.salt,
 						funding.amount,
 						funding.source,
-						funding.nonce,
-						funding.timelock
+						funding.nonce
 					)
 				)
 			);
@@ -355,14 +378,19 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 	/**
 	 * @dev Hash Balance struct for EIP-712 signing
 	 */
-	function _hashBalance(Balance calldata balance) internal pure returns (bytes32) {
-		return keccak256(abi.encode(BALANCE_TYPEHASH, balance.channelId, balance.balance0, balance.balance1, balance.nonce));
+	function _hashBalance(Balance calldata balance) internal view returns (bytes32) {
+		return
+			_hashTypedDataV4( // TODO: added _hashTypedDataV4, does it make sense?
+				keccak256(
+					abi.encode(BALANCE_TYPEHASH, balance.channelId, balance.balance0, balance.balance1, balance.nonce)
+				)
+			);
 	}
 
 	/**
 	 * @dev Verify EIP-712 signature
 	 */
-	function _verifySignature(bytes32 structHash, bytes calldata sig, address expected) internal view {
+	function _verifySignature(bytes32 structHash, bytes calldata sig, address expected) internal pure {
 		address recovered = ECDSA.recover(structHash, sig);
 		if (recovered != expected) revert InvalidSignature();
 	}
@@ -370,7 +398,13 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 	/**
 	 * @dev Execute payout and close channel
 	 */
-	function _executePayout(bytes32 channelId, Channel storage channel, uint256 payout0, uint256 payout1, bool penaltyApplied) internal {
+	function _executePayout(
+		bytes32 channelId,
+		Channel storage channel,
+		uint256 payout0,
+		uint256 payout1,
+		bool penaltyApplied
+	) internal {
 		address addr0 = channel.address0;
 		address addr1 = channel.address1;
 
