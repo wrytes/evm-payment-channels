@@ -221,7 +221,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 		if (channel.maturity == 0) revert NoSettlementPending();
 
 		// Challenge nonce must be less than settlement nonce
-		if (balance.nonce >= SETTLEMENT_NONCE) revert InvalidNonce(); // TODO: check if "==" is better for comparision
+		if (balance.nonce >= SETTLEMENT_NONCE) revert InvalidNonce();
 
 		// Challenge nonce must be higher than current challenge
 		Balance storage currentChallenge = _challenges[balance.channelId];
@@ -339,7 +339,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 		// Create a deterministic channelId based on the channel's immutable properties
 		// We use a simplified struct that doesn't include amount/source/nonce which change
 		return
-			_hashTypedDataV4( // TODO: added _hashTypedDataV4, does it make sense?
+			_hashTypedDataV4(
 				keccak256(
 					abi.encode(
 						CHANNELID_TYPEHASH,
@@ -380,7 +380,7 @@ contract PaymentChannel is IPaymentChannel, EIP712, ReentrancyGuard {
 	 */
 	function _hashBalance(Balance calldata balance) internal view returns (bytes32) {
 		return
-			_hashTypedDataV4( // TODO: added _hashTypedDataV4, does it make sense?
+			_hashTypedDataV4(
 				keccak256(
 					abi.encode(BALANCE_TYPEHASH, balance.channelId, balance.balance0, balance.balance1, balance.nonce)
 				)

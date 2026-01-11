@@ -3,6 +3,10 @@
 	"version": "0.0.1",
 	"private": true,
 	"license": "GPL-3.0",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"author": "samclassix <samclassix@proton.me>",
 	"description": "Smart contracts for EVM payment channels with optimistic settlement",
 	"directories": {
 		"test": "test",
@@ -15,11 +19,13 @@
 		"test": "npx hardhat test",
 		"coverage": "npx hardhat coverage",
 		"deploy": "npx hardhat ignition deploy",
-		"verify": "npx hardhat verify"
+		"verify": "npx hardhat verify",
+		"npm:build": "tsup",
+		"npm:publish": "npm publish --access public"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/frankencoin/evm-payment-channels"
+		"url": "git+https://github.com/wrytes/evm-payment-channels"
 	},
 	"keywords": [
 		"payment-channels",
