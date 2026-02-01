@@ -1,5 +1,5 @@
 import { arbitrum, base, mainnet } from 'viem/chains';
-import { Chain } from 'viem';
+import { Address, Chain } from 'viem';
 
 // network and chains
 export const ChainMain = { mainnet } as const;
@@ -32,6 +32,8 @@ export type ChainAddressMainnet = {
 	// identifier
 	chainId: typeof mainnet.id;
 	chainSelector: string;
+
+	paymentChannelFactory: Address;
 };
 
 export type ChainAddressArbitrum = {

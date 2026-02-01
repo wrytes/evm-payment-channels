@@ -1,0 +1,51 @@
+{
+	"name": "@wrytes/evm-payment-channels-indexer",
+	"version": "0.0.1",
+	"private": true,
+	"license": "GPL-3.0",
+	"author": "samclassix <samclassix@proton.me>",
+	"description": "Event indexer for EVM payment channels using Ponder",
+	"scripts": {
+		"dev": "ponder dev --disable-ui",
+		"dev:ui": "ponder dev",
+		"start": "ponder start",
+		"db": "ponder db",
+		"codegen": "ponder codegen",
+		"lint": "eslint .",
+		"typecheck": "tsc"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wrytes/evm-payment-channels"
+	},
+	"keywords": [
+		"payment-channels",
+		"indexer",
+		"ponder",
+		"evm",
+		"blockchain-events",
+		"layer2",
+		"optimistic-settlement",
+		"eip-712"
+	],
+	"bugs": {
+		"url": "https://github.com/wrytes/evm-payment-channels/issues"
+	},
+	"homepage": "https://github.com/wrytes/evm-payment-channels#readme",
+	"dependencies": {
+		"hono": "^4.6.14",
+		"ponder": "^0.15.17",
+		"viem": "^2.21.3"
+	},
+	"devDependencies": {
+		"@types/node": "^20.9.0",
+		"eslint": "^8.53.0",
+		"eslint-config-ponder": "^0.15.17",
+		"tsx": "^4.21.0",
+		"typescript": "^5.2.2"
+	},
+	"engines": {
+		"node": ">=18.0.0",
+		"yarn": ">=1.22.0"
+	}
+}
